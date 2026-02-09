@@ -5,7 +5,7 @@ import { ForgotPasswordDTO, LoginUserDTO, ResetPasswordDTO, VerifyUserDTO } from
 // Instanciamos o controller uma única vez
 const authController = new AuthController();
 
-export const authRoutes = new Elysia({ prefix: '/auth' })
+export const openedRoutes = new Elysia({ prefix: '/auth' })
   // Note como as rotas apenas delegam a execução para o controller
   .post('/login', (context) => authController.login(context), {
     body: LoginUserDTO,

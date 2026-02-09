@@ -5,6 +5,8 @@ export interface AuthUser {
   id: string;
   email: string;
   roles: UserRole[];
+  iat: number;
+  exp: number;
 }
 
 export interface JwtAuthPayload {

@@ -6,9 +6,11 @@ import { Logger } from './core/logger/logger';
 import { env } from './core/config/env';
 import { publicRoutes } from './presentation/routes/public';
 import { privateRoutes } from './presentation/routes/private';
-import { authPlugin } from './presentation/middlewares/auth/auth.plugin';
 
-const app = new Elysia()
+const app = new Elysia();
+errorMiddleware(app);
+
+app
   .use(
     swagger({
       path: '/doc',
@@ -21,7 +23,6 @@ const app = new Elysia()
       }
     })
   )
-  .use(errorMiddleware)
   .get(
     '/',
     () => ({
@@ -43,7 +44,7 @@ const app = new Elysia()
 // Database Connection
 mongoose
   .connect(env.DATABASE_URL || 'mongodb://localhost:27017/api_bun')
-  .then(() => Logger.info('Connected to MongoDB'))
+  .then(() => Logger.info('Connected to MongoDB 🍃'))
   .catch((err) => Logger.error('MongoDB connection error', err));
 
 Logger.info(`🚀 Server is running at ${app.server?.hostname}:${app.server?.port}`);

@@ -1,46 +1,44 @@
-import { Elysia } from 'elysia';
+// src/middlewares/error.middleware.ts
 import { ApiError } from '@/core/errors/api-error';
-import { Logger } from '@/core/logger/logger';
+import type { Elysia } from 'elysia';
 
-export const errorMiddleware = new Elysia()
-  .error({
-    API_ERROR: ApiError
-  })
-  .onError(({ code, error, set }) => {
-    // 1. Extraímos a mensagem de forma segura
-    // Verificamos se o erro é uma instância de Error ou se possui a propriedade message
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
+export function errorMiddleware(app: Elysia) {
+  app.onError((ctx) => {
+    const { error, set, request, code } = ctx;
 
-    Logger.error(`Error occurred: ${errorMessage}`, { code, stack: errorStack });
+    // 🔹 Erro de validação do Elysia
+    if (code === 'VALIDATION') {
+      set.status = 400;
 
-    // 2. Tratamento para nossos erros customizados (SOLID)
+      return {
+        success: false,
+        message: 'Erro de validação',
+        code: 'VALIDATION_ERROR',
+        details: error
+      };
+    }
+
+    // 🔹 Erros conhecidos da aplicação
     if (error instanceof ApiError) {
       set.status = error.statusCode;
+
       return {
-        status: 'error',
-        code: error.code,
+        success: false,
         message: error.message,
-        details: error.details
+        code: error.code
       };
     }
 
-    // 3. Tratamento para erros de validação do Elysia (Zod/TypeBox)
-    if (code === 'VALIDATION') {
-      set.status = 422;
-      return {
-        status: 'error',
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request data',
-        details: error instanceof Error ? error.message : error
-      };
-    }
+    console.error('[INTERNAL_ERROR]', {
+      path: request.url,
+      error
+    });
 
-    // 4. Erro genérico para qualquer outra falha
     set.status = 500;
     return {
-      status: 'error',
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred'
+      success: false,
+      message: 'Erro interno do servidor',
+      code: 'INTERNAL_SERVER_ERROR'
     };
   });
+}
