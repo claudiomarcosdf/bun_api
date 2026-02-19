@@ -16,3 +16,16 @@ export interface JwtAuthPayload {
   iat: number;
   exp: number;
 }
+
+export interface CookieType {
+  auth_token: {
+    set: (options: {
+      value: string;
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: 'strict' | 'lax' | 'none';
+      maxAge: number;
+      path: string;
+    }) => void;
+  };
+}

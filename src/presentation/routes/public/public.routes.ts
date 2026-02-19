@@ -22,4 +22,10 @@ export const openedRoutes = new Elysia({ prefix: '/auth' })
   .post('/reset-password', (context) => authController.resetPassword(context), {
     body: ResetPasswordDTO,
     detail: { summary: 'Reset password', tags: ['Auth'] }
+  })
+  .get('/me', (context) => authController.me(context), {
+    detail: { summary: 'Get current session user', tags: ['Auth'] }
+  })
+  .post('/logout', (context) => authController.logout(context), {
+    detail: { summary: 'Logout user', tags: ['Auth'] }
   });

@@ -13,7 +13,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().min(1),
   SMTP_PASSWORD: z.string().min(1),
   SMTP_FROM: z.string().min(1),
-  APP_URL: z.string().min(1)
+  APP_URL: z.string().min(1),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
 });
 
 export const env = envSchema.parse(Bun.env);
