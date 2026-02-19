@@ -2,7 +2,7 @@ import { t } from 'elysia';
 
 export const RegisterUserDTO = t.Object({
   username: t.String(),
-  email: t.String({ format: 'email' }),
+  email: t.String({ format: 'email', error: 'Invalid email format' }),
   password: t.String({ minLength: 6 }),
   document: t.String()
 });
@@ -12,7 +12,7 @@ export const VerifyUserDTO = t.Object({
 });
 
 export const LoginUserDTO = t.Object({
-  email: t.String({ format: 'email' }),
+  email: t.String({ format: 'email', error: 'Invalid email format' }),
   password: t.String()
 });
 
