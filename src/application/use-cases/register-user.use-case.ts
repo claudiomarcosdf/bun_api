@@ -1,11 +1,14 @@
-import { IUserRepository } from '@/domain/repositories/user.repository.interface';
+import { IUserRepository } from '@/domain/repositories/user.repository';
 import { EmailService } from '@/infrastructure/services/email.service';
 import { ConflictError } from '@/core/errors/api-error';
 import { UserRole } from '@/domain/entities/user.entity';
 import { Logger } from '@/core/logger/logger';
 
 export class RegisterUserUseCase {
-  constructor(private userRepository: IUserRepository, private emailService: EmailService) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService
+  ) {}
 
   async execute(data: any) {
     const existingUser = await this.userRepository.findByEmail(data.email);
@@ -23,7 +26,7 @@ export class RegisterUserUseCase {
       password: hashedPassword,
       active: false,
       roles: [UserRole.USER],
-      verification_code: verificationCode
+      verificationCode
     });
 
     await this.emailService.sendVerificationEmail(user.email, verificationCode);

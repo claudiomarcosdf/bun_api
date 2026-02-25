@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia';
+import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
 import mongoose from 'mongoose';
 import { errorMiddleware } from './presentation/middlewares/error.middleware';
@@ -11,6 +12,12 @@ const app = new Elysia();
 errorMiddleware(app);
 
 app
+  .use(
+    cors({
+      origin: '*',
+      credentials: true
+    })
+  )
   .use(
     swagger({
       path: '/doc',

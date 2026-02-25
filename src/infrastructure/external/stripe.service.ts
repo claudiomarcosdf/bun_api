@@ -63,13 +63,13 @@ export class StripeService {
 
       // Retorna os dados formatados para serem salvos no nosso banco
       return {
-        stripe_customer_id: customer.id,
-        stripe_subscription_id: subscriptionId,
-        stripe_subscription_status: subscriptionStatus,
-        stripe_price_id: priceId,
+        stripeCustomerId: customer.id,
+        stripeSubscriptionId: subscriptionId,
+        stripeSubscriptionStatus: subscriptionStatus,
+        stripePriceId: priceId,
         plan: 'FREE',
-        unit_amount: freePrice?.unit_amount || 0,
-        current_period_start: Math.floor(Date.now() / 1000)
+        unitAmount: freePrice?.unit_amount || 0,
+        currentPeriodStart: Math.floor(Date.now() / 1000)
       };
     } catch (error: any) {
       Logger.error(`Stripe integration failed: ${error.message}`);
@@ -105,7 +105,7 @@ export class StripeService {
   /**
    * Cria uma sessão de checkout para atualizar o plano para PRO.
    */
-  async updatePlanToPremium(stripeCustomerId: string): Promise<string | null> {
+  async updatePlanToPro(stripeCustomerId: string): Promise<string | null> {
     try {
       const price = await this.getPrice('PRO');
       if (!price) {
@@ -150,12 +150,13 @@ export class StripeService {
       const price = subscription.items.data[0].price;
 
       return {
-        stripe_subscription_id: subscription.id,
-        stripe_subscription_status: subscription.status,
+        stripeCustomerId: subscription.customer,
+        stripeSubscriptionId: subscription.id,
+        stripeSubscriptionStatus: subscription.status,
         plan: price.nickname || 'PRO',
-        stripe_price_id: price.id,
-        unit_amount: price.unit_amount,
-        current_period_start: subscription.current_period_start
+        stripePriceId: price.id,
+        unitAmount: price.unit_amount,
+        currentPeriodStart: subscription.current_period_start
       };
     } catch (error: any) {
       Logger.error(`StripeService (confirmPayment): ${error.message}`);
@@ -171,12 +172,12 @@ export class StripeService {
       const subscriptionCanceled = await this.stripe.subscriptions.cancel(stripeSubscriptionId);
 
       return {
-        stripe_subscription_id: subscriptionCanceled.id,
-        stripe_subscription_status: subscriptionCanceled.status,
+        stripeSubscriptionId: subscriptionCanceled.id,
+        stripeSubscriptionStatus: subscriptionCanceled.status,
         plan: 'FREE',
-        stripe_price_id: null,
-        unit_amount: null,
-        current_period_start: null
+        stripePriceId: null,
+        unitAmount: null,
+        currentPeriodStart: null
       };
     } catch (error: any) {
       Logger.error(`StripeService (cancelSubscription): ${error.message}`);

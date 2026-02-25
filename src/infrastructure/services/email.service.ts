@@ -14,7 +14,7 @@ export class EmailService {
         user: env.SMTP_USER,
         pass: env.SMTP_PASSWORD
       }
-    });
+    } as any);
   }
 
   async sendVerificationEmail(email: string, code: string) {
@@ -30,6 +30,23 @@ export class EmailService {
       Logger.info(`Verification email sent to ${email}`);
     } catch (error) {
       Logger.error(`Failed to send email to ${email}`, error);
+      throw error;
+    }
+  }
+
+  async sendResetPasswordEmail(email: string, token: string) {
+    const resetLink = `${env.APP_URL}/auth/reset-password?token=${token}`;
+
+    try {
+      await this.transporter.sendMail({
+        from: env.SMTP_FROM,
+        to: email,
+        subject: 'Password Reset Request',
+        html: `<h1>Password Reset</h1><p>You requested a password reset. Click <a href="${resetLink}">here</a> to reset your password.</p><p>If you did not request this, please ignore this email.</p>`
+      });
+      Logger.info(`Password reset email sent to ${email}`);
+    } catch (error) {
+      Logger.error(`Failed to send password reset email to ${email}`, error);
       throw error;
     }
   }

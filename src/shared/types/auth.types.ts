@@ -3,6 +3,7 @@ import { UserRole } from '@/domain/entities/user.entity';
 
 export interface AuthUser {
   id: string;
+  tenantId?: string | null;
   email: string;
   roles: UserRole[];
   iat: number;

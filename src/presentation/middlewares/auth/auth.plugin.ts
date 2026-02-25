@@ -20,6 +20,7 @@ export const authPlugin = new Elysia({ name: 'plugin' })
       resolve: async ({ bearer, jwt, cookie }) => {
         if (!enabled) return {};
 
+        //Não precisa passar o token via header se tiver um cookie HttpOnly, facilita consumo por frontend tradicional
         // Tenta cookie HttpOnly primeiro, depois bearer (mobile/Postman)
         const rawToken = cookie?.auth_token?.value ?? bearer;
         const token = typeof rawToken === 'string' && rawToken.length > 0 ? rawToken : null;

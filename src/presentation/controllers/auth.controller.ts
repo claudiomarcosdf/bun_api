@@ -4,17 +4,20 @@ import { ResetPasswordUseCase } from '@/application/use-cases/reset-password.use
 import { MongooseUserRepository } from '@/infrastructure/repositories/mongoose-user.repository';
 import { UnauthorizedError } from '@/core/errors/api-error';
 import { env } from '@/core/config/env';
+import { EmailService } from '@/infrastructure/services/email.service';
 
 export class AuthController {
   private userRepository: MongooseUserRepository;
   private verifyUserUseCase: VerifyUserUseCase;
   private resetPasswordUseCase: ResetPasswordUseCase;
+  private emailService: EmailService;
 
   constructor() {
     // Inicializamos as dependências necessárias
     this.userRepository = new MongooseUserRepository();
+    this.emailService = new EmailService();
     this.verifyUserUseCase = new VerifyUserUseCase(this.userRepository);
-    this.resetPasswordUseCase = new ResetPasswordUseCase(this.userRepository);
+    this.resetPasswordUseCase = new ResetPasswordUseCase(this.userRepository, this.emailService);
   }
 
   async login({ body, jwt, cookie }: any) {

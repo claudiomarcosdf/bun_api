@@ -1,9 +1,13 @@
-import { IUserRepository } from '@/domain/repositories/user.repository.interface';
+import { IUserRepository } from '@/domain/repositories/user.repository';
 import { NotFoundError, BadRequestError } from '@/core/errors/api-error';
 import { Logger } from '@/core/logger/logger';
+import { EmailService } from '@/infrastructure/services/email.service';
 
 export class ResetPasswordUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService
+  ) {}
 
   /**
    * Gera um token de reset e prepara o envio (simulado via log)
@@ -22,8 +26,10 @@ export class ResetPasswordUseCase {
 
     // Salva o token no registro do usuário
     await this.userRepository.update(user.id!, {
-      resetLink: resetToken
+      resetPasswordToken: resetToken
     });
+
+    await this.emailService.sendResetPasswordEmail(user.email, resetToken);
 
     // Log do token para teste (em produção, seria enviado via EmailService)
     Logger.info(`Password reset requested for: ${email}. Token: ${resetToken}`);
@@ -36,7 +42,7 @@ export class ResetPasswordUseCase {
    */
   async executeReset(data: { token: string; newPassword: string }) {
     // Busca o usuário que possui este token de reset
-    const users = await this.userRepository.list({ resetLink: data.token });
+    const users = await this.userRepository.list({ resetPasswordToken: data.token });
     const user = users[0];
 
     if (!user) {
@@ -49,7 +55,7 @@ export class ResetPasswordUseCase {
     // Atualiza a senha e limpa o token de reset
     await this.userRepository.update(user.id!, {
       password: hashedPassword,
-      resetLink: undefined
+      resetPasswordToken: null
     });
 
     Logger.info(`Password reset successfully for user: ${user.email}`);

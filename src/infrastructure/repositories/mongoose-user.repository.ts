@@ -1,6 +1,7 @@
-import { IUserRepository } from '@/domain/repositories/user.repository.interface';
+import { IUserRepository } from '@/domain/repositories/user.repository';
 import { IUser } from '@/domain/entities/user.entity';
 import { UserModel } from '../database/mongoose-schemas';
+import { IPaymentAccount } from '@/domain/entities/payment-account.entity';
 
 export class MongooseUserRepository implements IUserRepository {
   async create(user: Partial<IUser>): Promise<IUser> {
@@ -19,7 +20,7 @@ export class MongooseUserRepository implements IUserRepository {
   }
 
   async findByVerificationCode(code: string): Promise<IUser | null> {
-    const user = await UserModel.findOne({ verification_code: code });
+    const user = await UserModel.findOne({ verificationCode: code });
     return user ? user.toObject() : null;
   }
 
@@ -36,5 +37,10 @@ export class MongooseUserRepository implements IUserRepository {
   async list(filters: any): Promise<IUser[]> {
     const users = await UserModel.find(filters);
     return users.map((u) => u.toObject());
+  }
+
+  async getUserAndPaymentAccountById(id: string): Promise<any | null> {
+    const user = await UserModel.findById(id).populate('paymentAccountId');
+    return user ? user.toObject() : null;
   }
 }

@@ -1,3 +1,4 @@
+import { IPaymentAccount } from '../entities/payment-account.entity';
 import { IUser } from '../entities/user.entity';
 
 export interface IUserRepository {
@@ -8,6 +9,7 @@ export interface IUserRepository {
   update(id: string, user: Partial<IUser>): Promise<IUser | null>;
   delete(id: string): Promise<boolean>;
   list(filters: any): Promise<IUser[]>;
+  getUserAndPaymentAccountById(id: string): Promise<any | null>;
 }
 
 export interface ITenantRepository {

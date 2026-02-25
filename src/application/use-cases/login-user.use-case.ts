@@ -1,4 +1,4 @@
-import { IUserRepository } from '@/domain/repositories/user.repository.interface';
+import { IUserRepository } from '@/domain/repositories/user.repository';
 import { UnauthorizedError, ForbiddenError } from '@/core/errors/api-error';
 import { Logger } from '@/core/logger/logger';
 import { CookieType } from '@/shared/types/auth.types';

@@ -30,6 +30,7 @@ const schemaOptions = {
 
 const UserSchema = new Schema<IUserDocument>(
   {
+    tenantId: { type: Schema.Types.ObjectId, ref: 'User', default: null }, // For multi-tenancy support
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     document: { type: String, required: true },
@@ -40,9 +41,9 @@ const UserSchema = new Schema<IUserDocument>(
       enum: Object.values(UserRole),
       default: [UserRole.USER]
     },
-    resetLink: { type: String },
-    verification_code: { type: String },
-    payment_account_id: { type: Schema.Types.ObjectId, ref: 'PaymentAccount' }
+    resetPasswordToken: { type: String, nullable: true },
+    verificationCode: { type: String, nullable: true },
+    paymentAccountId: { type: Schema.Types.ObjectId, ref: 'PaymentAccount' }
   },
   schemaOptions
 );
@@ -51,15 +52,25 @@ const PaymentAccountSchema = new Schema<IPaymentAccountDocument>(
   {
     cellphone: { type: String },
     plan: { type: String, default: 'FREE' },
-    stripe_customer_id: { type: String },
-    stripe_price_id: { type: String },
-    stripe_subscription_id: { type: String },
-    stripe_subscription_status: { type: String },
-    current_period_start: { type: Number },
-    unit_amount: { type: Number }
+    stripeCustomerId: { type: String },
+    stripePriceId: { type: String },
+    stripeSubscriptionId: { type: String },
+    stripeSubscriptionStatus: { type: String },
+    currentPeriodStart: { type: Number },
+    unitAmount: { type: Number }
   },
   schemaOptions
 );
+
+UserSchema.virtual('paymentAccount', {
+  ref: 'PaymentAccount',
+  localField: 'paymentAccountId',
+  foreignField: 'id',
+  justOne: true
+});
+
+UserSchema.set('toObject', { virtuals: true });
+UserSchema.set('toJSON', { virtuals: true });
 
 export const PaymentAccountModel = mongoose.model<IPaymentAccountDocument>('PaymentAccount', PaymentAccountSchema);
 

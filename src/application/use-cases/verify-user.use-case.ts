@@ -1,4 +1,4 @@
-import { IUserRepository } from '@/domain/repositories/user.repository.interface';
+import { IUserRepository } from '@/domain/repositories/user.repository';
 import { NotFoundError, BadRequestError } from '@/core/errors/api-error';
 import { Logger } from '@/core/logger/logger';
 import { StripeService } from '@/infrastructure/external/stripe.service';
@@ -32,8 +32,8 @@ export class VerifyUserUseCase {
       // 3. Ativa o usuário e vincula a conta de pagamento
       await this.userRepository.update(user.id!, {
         active: true,
-        verification_code: '',
-        payment_account_id: paymentAccount._id.toString()
+        verificationCode: null,
+        paymentAccountId: paymentAccount._id.toString()
       });
 
       Logger.info(`User activated and Stripe account initialized: ${user.email}`);
