@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { Logger } from '@/core/logger/logger';
 import { env } from '@/core/config/env';
+import { ResolvedSubscription } from '@/shared/types/subscription.type';
 
 export class StripeService {
   private stripe: Stripe;
@@ -103,7 +104,7 @@ export class StripeService {
   }
 
   /**
-   * Cria uma sessão de checkout para atualizar o plano para PRO.
+   * Cria uma sessão de CHECKOUT para atualizar o plano para PRO.
    */
   async updatePlanToPro(stripeCustomerId: string): Promise<string | null> {
     try {
@@ -129,7 +130,7 @@ export class StripeService {
 
       return session.url;
     } catch (error: any) {
-      Logger.error(`StripeService (updatePlanToPremium): ${error.message}`);
+      Logger.error(`StripeService (updatePlanToPRO): ${error.message}`);
       throw new Error(error.message);
     }
   }
@@ -144,23 +145,48 @@ export class StripeService {
         throw new Error('No subscription found for this session');
       }
 
-      const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-      const subscription = (await this.stripe.subscriptions.retrieve(subscriptionId)) as any;
-
-      const price = subscription.items.data[0].price;
-
-      return {
-        stripeCustomerId: subscription.customer,
-        stripeSubscriptionId: subscription.id,
-        stripeSubscriptionStatus: subscription.status,
-        plan: price.nickname || 'PRO',
-        stripePriceId: price.id,
-        unitAmount: price.unit_amount,
-        currentPeriodStart: subscription.current_period_start
-      };
+      return await this.resolveSubscriptionFromSession(session);
     } catch (error: any) {
       Logger.error(`StripeService (confirmPayment): ${error.message}`);
       throw new Error(error.message);
+    }
+  }
+
+  /**
+   * Eventos do Stripe, como pagamento confirmado, falhado, assinatura cancelada, etc.
+   */
+  async webhookHandler(payload: any, sig: string) {
+    let event: Stripe.Event;
+    try {
+      event = this.stripe.webhooks.constructEvent(payload, sig, env.STRIPE_WEBHOOK_SECRET);
+    } catch (error: any) {
+      Logger.error(`Webhook Error: ${error.message}`);
+      throw new Error(error.message);
+    }
+
+    try {
+      const subscriptionData = await this.handleStripeEvent(event);
+      return subscriptionData;
+    } catch (error: any) {
+      Logger.error(`Processed with internal error: ${error.message}`);
+    }
+  }
+
+  async handleStripeEvent(event: Stripe.Event) {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object as Stripe.Checkout.Session;
+        Logger.info(`💰 Payment ${session.id} proccessed.`);
+        // Lógica de DB aqui...
+        return await this.resolveSubscriptionFromSession(session);
+        break;
+
+      case 'payment_intent.payment_failed':
+        Logger.error('❌ Payment failure.');
+        break;
+
+      default:
+        Logger.info(`ℹ️ Event ignored: ${event.type}`);
     }
   }
 
@@ -183,5 +209,22 @@ export class StripeService {
       Logger.error(`StripeService (cancelSubscription): ${error.message}`);
       throw new Error(error.message);
     }
+  }
+
+  async resolveSubscriptionFromSession(session: Stripe.Checkout.Session): Promise<ResolvedSubscription> {
+    const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription!.id;
+    const subscription = (await this.stripe.subscriptions.retrieve(subscriptionId)) as any;
+
+    const price = subscription.items.data[0].price;
+
+    return {
+      stripeCustomerId: subscription.customer as string,
+      stripeSubscriptionId: subscription.id,
+      stripeSubscriptionStatus: subscription.status,
+      plan: price.nickname || 'PRO',
+      stripePriceId: price.id,
+      unitAmount: price.unit_amount,
+      currentPeriodStart: subscription.current_period_start
+    };
   }
 }

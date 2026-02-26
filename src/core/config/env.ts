@@ -8,6 +8,7 @@ const envSchema = z.object({
   BETTER_AUTH_EXPIRATION: z.string().min(1),
   STRIPE_PUBLIC_KEY: z.string().min(1),
   STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.string().min(1),
   SMTP_USER: z.string().min(1),

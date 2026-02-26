@@ -1,3 +1,4 @@
+import moment, * as momentTimezone from 'moment-timezone';
 import { UserRole } from '@/domain/entities/user.entity';
 import { AuthUser } from '../types/auth.types';
 
@@ -31,4 +32,15 @@ function formatISOWithTimezone(timestamp: number): string {
   return date.toISOString();
 }
 
-export { parseTimeToSeconds, getTenant, formatISOWithTimezone };
+function getNowBRToMongo() {
+  return momentTimezone.tz(moment().subtract(3, 'hours'), 'America/Sao_Paulo').format('YYYY-MM-DD HH:mm:ss.SSS');
+}
+
+function getDatetimeToMongoDB(dateString: string): Date {
+  const saoPauloDate = momentTimezone.tz(dateString, 'America/Sao_Paulo');
+
+  // Retorna o objeto Date (que será salvo em UTC pelo MongoDB)
+  return saoPauloDate.toDate();
+}
+
+export { parseTimeToSeconds, getTenant, formatISOWithTimezone, getNowBRToMongo, getDatetimeToMongoDB };

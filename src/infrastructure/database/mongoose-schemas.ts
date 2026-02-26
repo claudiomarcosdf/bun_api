@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IUser, UserRole } from '@/domain/entities/user.entity';
 import { IPaymentAccount } from '@/domain/entities/payment-account.entity';
+import { getNowBRToMongo } from '@/shared/utils/helper';
 
 export interface IUserDocument extends IUser, Document {}
 export interface IPaymentAccountDocument extends IPaymentAccount, Document {}
@@ -43,9 +44,14 @@ const UserSchema = new Schema<IUserDocument>(
     },
     resetPasswordToken: { type: String, nullable: true },
     verificationCode: { type: String, nullable: true },
-    paymentAccountId: { type: Schema.Types.ObjectId, ref: 'PaymentAccount' }
+    paymentAccountId: { type: Schema.Types.ObjectId, ref: 'PaymentAccount' },
+    createdAt: { type: Date, default: getNowBRToMongo() }, // Default apenas para createdAt
+    updatedAt: { type: Date, default: getNowBRToMongo() }
   },
-  schemaOptions
+  {
+    ...schemaOptions,
+    timestamps: false
+  }
 );
 
 const PaymentAccountSchema = new Schema<IPaymentAccountDocument>(
@@ -57,9 +63,14 @@ const PaymentAccountSchema = new Schema<IPaymentAccountDocument>(
     stripeSubscriptionId: { type: String },
     stripeSubscriptionStatus: { type: String },
     currentPeriodStart: { type: Number },
-    unitAmount: { type: Number }
+    unitAmount: { type: Number },
+    createdAt: { type: Date, default: getNowBRToMongo() }, // Default apenas para createdAt
+    updatedAt: { type: Date, default: getNowBRToMongo() } // Default para updatedAt, mas será atualizado manualmente no código para refletir o timezone correto
   },
-  schemaOptions
+  {
+    ...schemaOptions,
+    timestamps: false
+  }
 );
 
 UserSchema.virtual('paymentAccount', {

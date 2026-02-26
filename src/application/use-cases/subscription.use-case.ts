@@ -4,7 +4,8 @@ import { UserRole } from '@/domain/entities/user.entity';
 import { Logger } from '@/core/logger/logger';
 import { StripeService } from '@/infrastructure/external/stripe.service';
 import { PaymentAccountModel } from '@/infrastructure/database/mongoose-schemas';
-import { formatAmericanDateTimeUTC, formatISOWithTimezone } from '@/shared/utils/helper';
+import { formatISOWithTimezone } from '@/shared/utils/helper';
+import { ResolvedSubscription } from '@/shared/types/subscription.type';
 
 export class SubscriptionUseCase {
   private stripeService: StripeService;
@@ -34,6 +35,7 @@ export class SubscriptionUseCase {
     }
   }
 
+  //Testar se é melhor usar o webhook do Stripe para confirmar o pagamento ou fazer essa confirmação via endpoint mesmo, chamando a API do Stripe para verificar o status da assinatura
   async confirmPayment(sessionId: string, userId: string) {
     try {
       //checa se a assinatura já está ativa para o usuário
@@ -48,20 +50,7 @@ export class SubscriptionUseCase {
 
       // 1. Confirma o pagamento e obtém os dados da assinatura
       const subscriptionData = await this.stripeService.confirmPayment(sessionId);
-
-      await PaymentAccountModel.findOneAndUpdate(
-        { stripeCustomerId: subscriptionData.stripeCustomerId },
-        {
-          stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
-          stripePriceId: subscriptionData.stripePriceId,
-          unitAmount: subscriptionData.unitAmount,
-          currentPeriodStart: subscriptionData.currentPeriodStart,
-          stripeSubscriptionStatus: subscriptionData.stripeSubscriptionStatus,
-          plan: subscriptionData.plan,
-          updatedAt: subscriptionData.currentPeriodStart
-        },
-        { new: true }
-      );
+      await updatePaymentAccount(subscriptionData);
 
       Logger.info(`Subscription confirmed for session: ${sessionId}`);
 
@@ -75,4 +64,48 @@ export class SubscriptionUseCase {
       throw new BadRequestError(`Failed to confirm payment: ${error.message}`);
     }
   }
+
+  async webhookHandler(payload: any, sig: string) {
+    if (!sig) {
+      Logger.error('Missing Stripe signature in webhook request');
+      throw new BadRequestError('Missing Stripe signature');
+    }
+
+    try {
+      const subscription = await this.stripeService.webhookHandler(payload, sig);
+
+      if (!subscription) {
+        throw new BadRequestError('No session data received from webhook');
+      }
+
+      await updatePaymentAccount(subscription);
+
+      Logger.info(`Payment confirmed via webhook for subscription: ${subscription.stripeSubscriptionId}`);
+
+      return {
+        plan: subscription.plan,
+        status: subscription.stripeSubscriptionStatus,
+        currentPeriodStart: formatISOWithTimezone(subscription.currentPeriodStart) // Convertendo de timestamp para Date
+      };
+    } catch (error: any) {
+      Logger.error(`Error handling webhook event: ${error.message}`);
+      throw new BadRequestError(`Failed to handle webhook event: ${error.message}`);
+    }
+  }
+}
+
+async function updatePaymentAccount(subscriptionData: ResolvedSubscription) {
+  await PaymentAccountModel.findOneAndUpdate(
+    { stripeCustomerId: subscriptionData.stripeCustomerId },
+    {
+      stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+      stripePriceId: subscriptionData.stripePriceId,
+      unitAmount: subscriptionData.unitAmount,
+      currentPeriodStart: subscriptionData.currentPeriodStart,
+      stripeSubscriptionStatus: subscriptionData.stripeSubscriptionStatus,
+      plan: subscriptionData.plan,
+      updatedAt: formatISOWithTimezone(subscriptionData.currentPeriodStart); // Ajuste para o timezone de Brasília (UTC-3)
+    },
+    { new: true }
+  );
 }
