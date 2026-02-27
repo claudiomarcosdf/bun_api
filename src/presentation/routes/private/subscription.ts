@@ -1,4 +1,5 @@
-import { NotFoundError } from '@/core/errors/api-error';
+import { BadRequestError, NotFoundError } from '@/core/errors/api-error';
+import { Logger } from '@/core/logger/logger';
 import { UserController } from '@/presentation/controllers/user.controller';
 import { authPlugin } from '@/presentation/middlewares/auth/auth.plugin';
 import { getTenant } from '@/shared/utils/helper';
@@ -45,6 +46,42 @@ export const subscriptionRoutes = new Elysia({ prefix: '/subscriptions' })
       }),
       detail: {
         summary: 'Confirmação de pagamento',
+        tags: ['Subscriptions']
+      }
+    }
+  )
+  .post(
+    '/webhook',
+    async ({ request, set }) => {
+      try {
+        const arrayBuffer = await request.arrayBuffer();
+        const payload = Buffer.from(arrayBuffer);
+        const sig = request.headers.get('stripe-signature');
+
+        if (!sig) {
+          Logger.error('Missing Stripe signature in webhook request');
+          set.status = 400;
+          return { error: 'Missing Stripe signature' };
+        }
+
+        const result = await userController.subscriptionWebhook(payload, sig);
+        set.status = 200;
+        // Se foi um evento ignorado, retorna sucesso mas com indicação
+        if (result && result.status === 'ignored') {
+          return { received: true, status: 'ignored' };
+        }
+
+        return { received: true, data: result };
+      } catch (error: any) {
+        Logger.error(`Webhook processing failed: ${error.message}`);
+        set.status = 400;
+        return { error: error.message };
+      }
+    },
+    {
+      requiredAuth: false,
+      detail: {
+        summary: 'Confirmação de pagamento via webhook',
         tags: ['Subscriptions']
       }
     }

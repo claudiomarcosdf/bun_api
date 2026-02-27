@@ -1,4 +1,5 @@
 export interface ResolvedSubscription {
+  userId: string;
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   stripeSubscriptionStatus: string;

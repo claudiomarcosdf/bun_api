@@ -27,4 +27,8 @@ export class UserController {
   async subscriptionConfirm(sessionId: string, userId: string) {
     return await this.subscriptionUseCase.confirmPayment(sessionId, userId);
   }
+
+  async subscriptionWebhook(payload: Buffer<ArrayBuffer>, sig: string) {
+    return await this.subscriptionUseCase.webhookHandler(payload, sig);
+  }
 }

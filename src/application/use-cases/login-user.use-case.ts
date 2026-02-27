@@ -3,6 +3,7 @@ import { UnauthorizedError, ForbiddenError } from '@/core/errors/api-error';
 import { Logger } from '@/core/logger/logger';
 import { CookieType } from '@/shared/types/auth.types';
 import { env } from '@/core/config/env';
+import { RoleObfuscation } from '@/shared/constants/roleobfuscation';
 
 export class LoginUserUseCase {
   constructor(
@@ -28,7 +29,7 @@ export class LoginUserUseCase {
 
     const payload = {
       sub: user.id,
-      user_name: user.username,
+      username: user.username,
       email: user.email,
       roles: user.roles
     };
@@ -47,8 +48,15 @@ export class LoginUserUseCase {
 
     Logger.info(`User logged in: ${user.email}`);
 
+    const payloadUser = {
+      sub: user.id,
+      username: user.username,
+      email: user.email,
+      roles: user.roles.map((role) => RoleObfuscation[role as keyof typeof RoleObfuscation] || 'unknown')
+    };
+
     return {
-      user: payload
+      user: payloadUser // Retorna as roles ofuscadas para o frontend
     };
   }
 }

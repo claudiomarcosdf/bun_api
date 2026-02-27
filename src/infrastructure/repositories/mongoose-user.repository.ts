@@ -1,7 +1,7 @@
 import { IUserRepository } from '@/domain/repositories/user.repository';
 import { IUser } from '@/domain/entities/user.entity';
 import { UserModel } from '../database/mongoose-schemas';
-import { IPaymentAccount } from '@/domain/entities/payment-account.entity';
+import { getNowBRToMongo } from '@/shared/utils/helper';
 
 export class MongooseUserRepository implements IUserRepository {
   async create(user: Partial<IUser>): Promise<IUser> {
@@ -42,5 +42,18 @@ export class MongooseUserRepository implements IUserRepository {
   async getUserAndPaymentAccountById(id: string): Promise<any | null> {
     const user = await UserModel.findById(id).populate('paymentAccountId');
     return user ? user.toObject() : null;
+  }
+
+  async updateUserRole(id: string, role: string): Promise<IUser | null> {
+    const updatedAt = getNowBRToMongo();
+    const updated = await UserModel.findByIdAndUpdate(
+      id,
+      {
+        $addToSet: { roles: role }, // Adiciona apenas se não existir
+        $set: { updatedAt }
+      },
+      { new: true }
+    );
+    return updated ? updated.toObject() : null;
   }
 }

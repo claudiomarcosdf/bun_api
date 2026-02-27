@@ -5,6 +5,8 @@ import { MongooseUserRepository } from '@/infrastructure/repositories/mongoose-u
 import { UnauthorizedError } from '@/core/errors/api-error';
 import { env } from '@/core/config/env';
 import { EmailService } from '@/infrastructure/services/email.service';
+import { RoleObfuscation } from '@/shared/constants/roleobfuscation';
+import { UserRole } from '@/domain/entities/user.entity';
 
 export class AuthController {
   private userRepository: MongooseUserRepository;
@@ -53,9 +55,9 @@ export class AuthController {
     return {
       user: {
         sub: payload.sub,
-        user_name: payload.user_name,
+        username: payload.username,
         email: payload.email,
-        roles: payload.roles
+        roles: payload.roles.map((role: UserRole) => RoleObfuscation[role as keyof typeof RoleObfuscation] || 'unknown')
       }
     };
   }

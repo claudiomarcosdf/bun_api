@@ -10,6 +10,7 @@ export interface IUserRepository {
   delete(id: string): Promise<boolean>;
   list(filters: any): Promise<IUser[]>;
   getUserAndPaymentAccountById(id: string): Promise<any | null>;
+  updateUserRole(id: string, role: string): Promise<IUser | null>;
 }
 
 export interface ITenantRepository {

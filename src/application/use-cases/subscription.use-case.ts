@@ -24,7 +24,7 @@ export class SubscriptionUseCase {
 
     try {
       // 1. Realiza a assinatura no Stripe (a lógica de assinatura pode ser mais complexa dependendo do plano e opções)
-      const sessionURL = await this.stripeService.updatePlanToPro(stripeCustomerId);
+      const sessionURL = await this.stripeService.updatePlanToPro(stripeCustomerId, userId);
 
       Logger.info(`Session initialized to change plan PRO: ${sessionURL}`);
 
@@ -35,7 +35,7 @@ export class SubscriptionUseCase {
     }
   }
 
-  //Testar se é melhor usar o webhook do Stripe para confirmar o pagamento ou fazer essa confirmação via endpoint mesmo, chamando a API do Stripe para verificar o status da assinatura
+  //Se for usar o webhook não usar esse método, pois a confirmação do pagamento será feita no webhook
   async confirmPayment(sessionId: string, userId: string) {
     try {
       //checa se a assinatura já está ativa para o usuário
@@ -50,7 +50,7 @@ export class SubscriptionUseCase {
 
       // 1. Confirma o pagamento e obtém os dados da assinatura
       const subscriptionData = await this.stripeService.confirmPayment(sessionId);
-      await updatePaymentAccount(subscriptionData);
+      await this.updatePaymentAccount(subscriptionData);
 
       Logger.info(`Subscription confirmed for session: ${sessionId}`);
 
@@ -65,20 +65,19 @@ export class SubscriptionUseCase {
     }
   }
 
-  async webhookHandler(payload: any, sig: string) {
-    if (!sig) {
-      Logger.error('Missing Stripe signature in webhook request');
-      throw new BadRequestError('Missing Stripe signature');
-    }
-
+  async webhookHandler(payload: Buffer<ArrayBuffer>, sig: string) {
     try {
       const subscription = await this.stripeService.webhookHandler(payload, sig);
 
       if (!subscription) {
-        throw new BadRequestError('No session data received from webhook');
+        Logger.info(`Event ignored - no subscription data to process`);
+        return {
+          status: 'ignored',
+          message: 'Event ignored - not a checkout.session.completed event'
+        }; // Retorna resposta de sucesso para eventos ignorados
       }
 
-      await updatePaymentAccount(subscription);
+      await this.updatePaymentAccount(subscription);
 
       Logger.info(`Payment confirmed via webhook for subscription: ${subscription.stripeSubscriptionId}`);
 
@@ -92,20 +91,23 @@ export class SubscriptionUseCase {
       throw new BadRequestError(`Failed to handle webhook event: ${error.message}`);
     }
   }
-}
 
-async function updatePaymentAccount(subscriptionData: ResolvedSubscription) {
-  await PaymentAccountModel.findOneAndUpdate(
-    { stripeCustomerId: subscriptionData.stripeCustomerId },
-    {
-      stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
-      stripePriceId: subscriptionData.stripePriceId,
-      unitAmount: subscriptionData.unitAmount,
-      currentPeriodStart: subscriptionData.currentPeriodStart,
-      stripeSubscriptionStatus: subscriptionData.stripeSubscriptionStatus,
-      plan: subscriptionData.plan,
-      updatedAt: formatISOWithTimezone(subscriptionData.currentPeriodStart); // Ajuste para o timezone de Brasília (UTC-3)
-    },
-    { new: true }
-  );
+  private async updatePaymentAccount(subscriptionData: ResolvedSubscription) {
+    // update role user to OWNER and updateAt
+    await this.userRepository.updateUserRole(subscriptionData.userId, UserRole.OWNER);
+
+    await PaymentAccountModel.findOneAndUpdate(
+      { stripeCustomerId: subscriptionData.stripeCustomerId },
+      {
+        stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+        stripePriceId: subscriptionData.stripePriceId,
+        unitAmount: subscriptionData.unitAmount,
+        currentPeriodStart: subscriptionData.currentPeriodStart,
+        stripeSubscriptionStatus: subscriptionData.stripeSubscriptionStatus,
+        plan: subscriptionData.plan,
+        updatedAt: formatISOWithTimezone(subscriptionData.currentPeriodStart) // Ajuste para o timezone de Brasília (UTC-3)
+      },
+      { new: true }
+    );
+  }
 }
