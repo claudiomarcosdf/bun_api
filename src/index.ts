@@ -1,59 +1,23 @@
-import { Elysia } from 'elysia';
-import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
-import mongoose from 'mongoose';
-import { errorMiddleware } from './presentation/middlewares/error.middleware';
+import { createServer } from './application/server';
+import { registerRoutes } from './application/routes';
+import { bootstrap } from './application/bootstrap';
 import { Logger } from './core/logger/logger';
 import { env } from './core/config/env';
-import { publicRoutes } from './presentation/routes/public';
-import { privateRoutes } from './presentation/routes/private';
 
-const app = new Elysia();
-errorMiddleware(app);
+async function start() {
+  await bootstrap();
 
-app
-  .use(
-    cors({
-      origin: '*',
-      credentials: true
-    })
-  )
-  .use(
-    swagger({
-      path: '/doc',
-      documentation: {
-        info: {
-          title: 'api_bun SaaS API',
-          version: '1.0.0',
-          description: 'Multi-tenant SaaS API Boilerplate'
-        }
-      }
-    })
-  )
-  .get(
-    '/',
-    () => ({
-      message: 'Welcome to api_bun SaaS API',
-      version: '1.0.0',
-      docs: '/doc'
-    }),
-    {
-      detail: {
-        summary: 'Welcome endpoint',
-        tags: ['General']
-      }
-    }
-  )
-  .use(publicRoutes)
-  .use(privateRoutes)
-  .listen(env.PORT || 3000);
+  const app = createServer();
 
-// Database Connection
-mongoose
-  .connect(env.DATABASE_URL || 'mongodb://localhost:27017/api_bun')
-  .then(() => Logger.info('Connected to MongoDB 🍃'))
-  .catch((err) => Logger.error('MongoDB connection error', err));
+  registerRoutes(app);
 
-Logger.info(`🚀 Server is running at ${app.server?.hostname}:${app.server?.port}`);
+  app.listen(env.PORT || 3000);
+
+  Logger.info(`🚀 Server is running at ${app.server?.hostname}:${app.server?.port}`);
+
+  return app;
+}
+
+export const app = await start();
 
 export type App = typeof app;

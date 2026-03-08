@@ -15,7 +15,11 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().min(1),
   SMTP_FROM: z.string().min(1),
   APP_URL: z.string().min(1),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  FREE_PRODUCTS_LIMIT: z.coerce.number().min(1),
+  FREE_SALES_LIMIT: z.coerce.number().min(1),
+  PRO_PRODUCTS_LIMIT: z.coerce.number().min(-1),
+  PRO_SALES_LIMIT: z.coerce.number().min(-1)
 });
 
 export const env = envSchema.parse(Bun.env);

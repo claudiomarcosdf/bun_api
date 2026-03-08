@@ -1,6 +1,6 @@
 import moment, * as momentTimezone from 'moment-timezone';
-import { UserRole } from '@/domain/entities/user.entity';
-import { AuthUser } from '../types/auth.types';
+import { UserRole } from '@/modules/auth/domain/user.entity';
+import { AuthUser } from '@/modules/auth/domain/auth.types';
 
 const parseTimeToSeconds = (timeStr: string): number => {
   const unit = timeStr.slice(-1).toLowerCase();
